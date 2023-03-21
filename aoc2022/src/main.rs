@@ -1,7 +1,8 @@
-use std::fs;
+use std::{fs, hash::Hash};
 
 fn main() {
     aoc1();
+    aoc2();
 }
 
 fn get_input(num: &str) -> String {
@@ -40,4 +41,101 @@ fn aoc1() {
     println!("1.");
     println!("\tPart 1: {}", elves[0].total_calories);
     println!("\tPart 2: {}", elves[0].total_calories + elves[1].total_calories + elves[2].total_calories);
+}
+
+// Day 2
+fn aoc2() {
+    use std::collections::HashMap;
+
+    #[derive(Clone, Copy)]
+    enum Choice {
+        Rock = 1,
+        Paper = 2,
+        Scissors = 3
+    }
+
+    #[derive(Clone, Copy)]
+    enum Outcome {
+        Win = 6,
+        Tie = 3,
+        Lose = 0
+    }
+    use Choice::*;
+    use Outcome::*;
+
+    // Fastest way is probably to build a table and do a lookup, but this was easier to implement and not that slow
+    fn round(a: Choice, b: Choice) -> Outcome {
+        match a {
+            Rock => match b {
+                Rock => Tie,
+                Paper => Win,
+                Scissors => Lose
+            },
+            Paper => match b {
+                Rock => Lose,
+                Paper => Tie,
+                Scissors => Win
+            },
+            Scissors => match b {
+                Rock => Win,
+                Paper => Lose,
+                Scissors => Tie
+            }
+        }
+    }
+
+    fn choice_for_outcome(a: Choice, o: Outcome) -> Choice {
+        match a {
+            Rock => match o {
+                Win => Paper,
+                Tie => Rock,
+                Lose => Scissors
+            },
+            Paper => match o {
+                Win => Scissors,
+                Tie => Paper,
+                Lose => Rock
+            }
+            Scissors => match o {
+                Win => Rock,
+                Tie => Scissors,
+                Lose => Paper
+            }
+        }
+    }
+
+    let first_mapping = HashMap::from([
+        ('A', Rock),
+        ('B', Paper),
+        ('C', Scissors),
+        ('X', Rock),
+        ('Y', Paper),
+        ('Z', Scissors)
+    ]);
+    
+    let outcome_mapping = HashMap::from([
+        ('X', Lose),
+        ('Y', Tie),
+        ('Z', Win)
+    ]);
+    
+
+    let mut first_score: u32 = 0;
+    let mut second_score: u32 = 0;
+
+    let input = get_input("2");
+    let lines = input.split("\n");
+    for line in lines {
+        let a = first_mapping.get(&line.chars().next().unwrap()).unwrap().to_owned();
+        let b = first_mapping.get(&line.chars().nth(2).unwrap()).unwrap().to_owned();
+        let outcome = outcome_mapping.get(&line.chars().nth(2).unwrap()).unwrap().to_owned();
+        first_score += b as u32 + round(a, b) as u32;
+        second_score += outcome as u32 + choice_for_outcome(a, outcome) as u32
+    }
+
+    println!("2.");
+    println!("\tPart 1: {}", first_score);
+    println!("\tPart 2: {}", second_score);
+
+    
 }
