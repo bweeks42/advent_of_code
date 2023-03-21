@@ -4,6 +4,7 @@ fn main() {
     aoc1();
     aoc2();
     aoc3();
+    aoc4();
 }
 
 fn get_input(num: &str) -> String {
@@ -180,11 +181,40 @@ fn aoc3() {
 
     }
 
-
-
     println!("3.");
     println!("\tPart 1: {}", sum);
     println!("\tPart 2: {}", sum2);
+}
 
+// Day 4
+fn aoc4() {
+    let input = get_input("4");
+    let mut contained_pairs = 0;
+    let mut overlapping_pairs = 0;
+    for line in input.lines() {
+        let elves:Vec<&str> = line.split(",").collect();
+        let elf1 = elves[0];
+        let elf2 = elves[1];
 
+        let elf1_vals:Vec<&str> = elf1.split("-").collect();
+        let elf1_low = elf1_vals[0].parse::<u32>().unwrap();
+        let elf1_high = elf1_vals[1].parse::<u32>().unwrap();
+
+        let elf2_vals:Vec<&str> = elf2.split("-").collect();
+        let elf2_low = elf2_vals[0].parse::<u32>().unwrap();
+        let elf2_high = elf2_vals[1].parse::<u32>().unwrap();
+
+        if (elf1_low <= elf2_low && elf1_high >= elf2_high) || (elf1_low >= elf2_low && elf1_high <= elf2_high) {
+            contained_pairs += 1;
+        }
+
+        if (elf1_low <= elf2_low && elf1_high >= elf2_low) || 
+            (elf2_low <= elf1_low && elf2_high >= elf1_low) {
+            overlapping_pairs += 1;
+        }
+    }
+
+    println!("4.");
+    println!("\tPart 1: {}", contained_pairs);
+    println!("\tPart 2: {}", overlapping_pairs);
 }
