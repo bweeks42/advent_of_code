@@ -1,8 +1,9 @@
-use std::{fs, hash::Hash};
+use std::fs;
 
 fn main() {
     aoc1();
     aoc2();
+    aoc3();
 }
 
 fn get_input(num: &str) -> String {
@@ -135,7 +136,55 @@ fn aoc2() {
 
     println!("2.");
     println!("\tPart 1: {}", first_score);
-    println!("\tPart 2: {}", second_score);
+    println!("\tPart 2: {}", second_score); 
+}
 
-    
+// Day 3
+fn aoc3() {
+
+    fn char_to_priority(c: char) -> u32 {
+        if c.is_uppercase() {
+            c as u32 - 38
+        } else {
+            c as u32 - 96
+        }
+    }
+
+    let input = get_input("3");
+    let lines: Vec<&str> = input.lines().collect();
+    let mut sum = 0;
+
+    for line in lines.clone() {
+        let len = line.len();
+        let compartment_a = &line[0..len/2];
+        let compartment_b = &line[len/2..];
+        for c in compartment_a.chars() {
+            if compartment_b.contains(c) {
+                sum += char_to_priority(c);
+                break
+            }
+        }
+    }
+
+    let mut sum2 = 0;
+    for i in (0..lines.len()).step_by(3) {
+        let a = lines[i];
+        let b = lines[i+1];
+        let c = lines[i+2];
+        for ch in a.chars() {
+            if b.contains(ch) && c.contains(ch) {
+                sum2 += char_to_priority(ch);
+                break
+            }
+        }
+
+    }
+
+
+
+    println!("3.");
+    println!("\tPart 1: {}", sum);
+    println!("\tPart 2: {}", sum2);
+
+
 }
