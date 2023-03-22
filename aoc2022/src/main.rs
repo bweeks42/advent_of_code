@@ -6,6 +6,7 @@ fn main() {
     aoc3();
     aoc4();
     aoc5();
+    aoc6();
 }
 
 fn get_input(num: &str) -> String {
@@ -48,8 +49,6 @@ fn aoc1() {
 
 // Day 2
 fn aoc2() {
-    use std::collections::HashMap;
-
     #[derive(Clone, Copy)]
     enum Choice {
         Rock = 1,
@@ -282,7 +281,37 @@ fn aoc5() {
         o
     }
     
-    println!("4.");
+    println!("5.");
     println!("\tPart 1: {}", str_for_crates(&crates));
     println!("\tPart 2: {}", str_for_crates(&second_crates));
+}
+
+fn aoc6() {
+    let input = get_input("6");
+
+    fn start_of_n_unique_in_buffer(n: usize, buffer: &String) -> usize {
+        for i in n..buffer.len() {
+            let s: Vec<char> = buffer[i-n..i].chars().collect();
+            let mut seen_chars: Vec<char> = vec![];
+            for ch in s {
+                if seen_chars.contains(&ch) {
+                    break;
+                } else {
+                    seen_chars.push(ch);
+                }
+            }
+            if seen_chars.len() == n {
+                return i;
+            }
+        }
+
+        panic!("Should've found something.")
+    }
+    
+    // Part 1: Start of Packet
+    let packet_start = start_of_n_unique_in_buffer(4, &input);
+    let message_start = start_of_n_unique_in_buffer(14, &input);
+    println!("6.");
+    println!("\tPart 1: {}", packet_start);
+    println!("\tPart 2: {}", message_start);
 }
