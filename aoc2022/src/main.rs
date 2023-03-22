@@ -1,10 +1,11 @@
-use std::fs;
+use std::{fs, collections::HashMap};
 
 fn main() {
     aoc1();
     aoc2();
     aoc3();
     aoc4();
+    aoc5();
 }
 
 fn get_input(num: &str) -> String {
@@ -217,4 +218,71 @@ fn aoc4() {
     println!("4.");
     println!("\tPart 1: {}", contained_pairs);
     println!("\tPart 2: {}", overlapping_pairs);
+}
+
+// Day 5
+fn aoc5() {
+    let input = get_input("5");
+    let lines: Vec<&str> = input.lines().collect();
+
+    // Skip the crate description as we'll just hard code that
+    let instructions = &lines[10..];
+
+    let mut crates = HashMap::from([
+        ("1", vec!['Z', 'T', 'F', 'R', 'W', 'J', 'G']),
+        ("2", vec!['G', 'W', 'M']),
+        ("3", vec!['J', 'N', 'H', 'G']),
+        ("4", vec!['J', 'R', 'C', 'N', 'W']),
+        ("5", vec!['W', 'F', 'S', 'B', 'G', 'Q', 'V', 'M']),
+        ("6", vec!['S', 'R', 'T', 'D', 'V', 'W', 'C']),
+        ("7", vec!['H', 'B', 'N', 'C', 'D', 'Z', 'G', 'V']),
+        ("8", vec!['S', 'J', 'N', 'M', 'G', 'C']),
+        ("9", vec!['G', 'P', 'N', 'W', 'C', 'J', 'D', 'L'])
+    ]);
+
+    let mut second_crates = crates.clone(); // Need a copy for the second part of problem
+
+    for instruction in instructions {
+        let parts: Vec<&str> = instruction.split(' ').collect();
+        let count = parts[1].parse::<u32>().unwrap();
+        let from = parts[3];
+        let to = parts[5];
+        
+        // Part 1
+        for _ in 0..count {
+            let from_stack = crates.get_mut(from).unwrap();
+            let c = from_stack.pop().unwrap();
+            let to_stack = crates.get_mut(to).unwrap();
+            to_stack.push(c);
+        }
+
+        // Part 2
+        let mut to_move: Vec<char> = vec![];
+        for _ in 0..count {
+            let from_stack = second_crates.get_mut(from).unwrap();
+            let c = from_stack.pop().unwrap();
+            to_move.push(c);
+        }
+        to_move.reverse();
+
+        let to_stack = second_crates.get_mut(to).unwrap();
+        for ch in to_move {
+            to_stack.push(ch);
+        }
+    }
+
+    fn str_for_crates(h: &HashMap<&str, Vec<char>>) -> String {
+        // Need to iterate as hashmap is unordered
+        let mut o = String::new();
+        for i in 1..=9 {
+            let is = i.to_string(); 
+            let ch = h.get(is.as_str()).unwrap().last().unwrap();
+            o.push(*ch);
+        }
+        o
+    }
+    
+    println!("4.");
+    println!("\tPart 1: {}", str_for_crates(&crates));
+    println!("\tPart 2: {}", str_for_crates(&second_crates));
 }
