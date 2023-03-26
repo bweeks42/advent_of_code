@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap};
+use std::{fs, collections::HashMap, borrow::BorrowMut, cell::RefCell, rc::Rc};
 
 fn main() {
     aoc1();
@@ -7,6 +7,7 @@ fn main() {
     aoc4();
     aoc5();
     aoc6();
+    aoc7();
 }
 
 fn get_input(num: &str) -> String {
@@ -314,4 +315,108 @@ fn aoc6() {
     println!("6.");
     println!("\tPart 1: {}", packet_start);
     println!("\tPart 2: {}", message_start);
+}
+
+fn aoc7() {
+    let input = get_input("7");
+
+    struct Directory {
+        size: u32,
+        name: String,
+        children: Vec<Rc<RefCell<Directory>>>,
+        parent: Option<Rc<RefCell<Directory>>>
+    }
+
+    let mut head = Rc::new(RefCell::new(Directory {
+        size: 0,
+        name: String::from("\\"),
+        children: vec![],
+        parent: None
+    }));
+    let mut current = Rc::clone(&head);
+
+    let lines: Vec<&str> = input.lines().collect();
+    let feed = &lines[1..];
+
+    for line in feed {
+        if line.starts_with("$ cd") {
+            let dir_name = line.split_ascii_whitespace().collect::<Vec<&str>>()[2];
+            if dir_name.eq("..") {
+                let parent = Rc::clone(current.borrow().parent.as_ref().unwrap());
+                current = parent;
+            } else {
+                let tmp = Rc::clone(&current);
+                for child in &tmp.borrow().children {
+                    if child.borrow().name.eq(dir_name) {
+                        current = Rc::clone(&child);
+                    }
+                }
+            } 
+        } else if line.starts_with("$ ls") {
+            continue; 
+        } else if line.starts_with("dir ") {
+            let dir_name = line.split_ascii_whitespace().collect::<Vec<&str>>()[1];
+            let child = Rc::new(RefCell::new(Directory {
+                size: 0,
+                name: String::from(dir_name),
+                children: vec![],
+                parent: Some(Rc::clone(&current))
+            }));
+            (*current).borrow_mut().children.push(Rc::clone(&child));
+        } else {
+            let s = line.split_ascii_whitespace().collect::<Vec<&str>>();
+            let size = s[0].parse::<u32>().unwrap();
+            let name = s[1];
+            let new_child = Rc::new(RefCell::new(Directory {
+                size: size,
+                name: String::from(name),
+                children: vec![],
+                parent: Some(Rc::clone(&current))
+            }));
+            (*current).borrow_mut().children.push(Rc::clone(&new_child));
+        }
+    }
+
+    // Walk tree to build size
+    fn walk_build(dir: Rc<RefCell<Directory>>) -> u32 {
+        let mut size = (*dir).borrow().size;
+        let mut under_max = 0;
+        for child in &(*dir).borrow().children {
+            under_max += walk_build(Rc::clone(child));
+            size += child.borrow().size;
+        }
+        (*dir).borrow_mut().size = size;
+        let k = (*dir).borrow();
+        if k.children.len() > 0 && k.size < 100000 {
+            under_max += k.size;
+        }
+        under_max
+    }
+
+    fn walk_biggest(dir: &Rc<RefCell<Directory>>, needed_space: u32) -> u32 {
+        let mut biggest = 0;
+        if dir.borrow().size > needed_space {
+            biggest = dir.borrow().size;
+        }
+        for child in &dir.borrow().children {
+            let child_biggest = walk_biggest(child, needed_space);
+            if child_biggest > needed_space && child_biggest < biggest {
+                biggest = child_biggest;
+            }
+        }
+
+        biggest
+    }
+
+    let sum_under_10k = walk_build(Rc::clone(&head));
+
+    let free_space_left = 70000000 - head.borrow().size;
+    let space_needed = 30000000 - free_space_left;
+
+    let biggest_to_delete = walk_biggest(&Rc::clone(&head), space_needed);
+
+
+    println!("7.");
+    println!("\tPart 1: {}", sum_under_10k);
+    println!("\tPart 2: {}", biggest_to_delete);
 }
