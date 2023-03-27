@@ -10,6 +10,7 @@ fn main() {
     aoc7();
     aoc8();
     aoc9();
+    aoc10();
 }
 
 fn get_input(num: &str) -> String {
@@ -647,4 +648,100 @@ fn aoc9() {
     println!("9.");
     println!("\tPart 1: {}", second_visited.len());
     println!("\tPart 2: {}", last_visited.len());
+}
+
+fn aoc10() {
+    let input = get_input("10");
+
+
+    #[derive(Clone, Copy)]
+    enum Command {
+        NOOP,
+        ADDX{cycles: u32, value: i32}
+    }
+    
+    let mut pipeline:Vec<Command> = vec![];
+
+    for line in input.lines() {
+        let s:Vec<&str> = line.split_ascii_whitespace().collect();
+        let command = s[0];
+        match command {
+            "noop" => {
+                pipeline.push(Command::NOOP);
+            },
+            "addx" => {
+                let v = s[1].parse::<i32>().unwrap();
+                pipeline.push(Command::ADDX { cycles: 2, value: v });
+            },
+            _ => {
+                panic!("Not sure what {} is!", command);
+            }
+        }
+    }
+    pipeline.reverse();
+
+    // Part 1
+    let mut x = 1;
+    let mut cycle = 1;
+    let mut strengths = 0;
+
+    // Part 2
+    let mut CRT = vec![vec![0; 40]; 6];
+
+    // Run    
+    while pipeline.len() > 0 {
+        let command = &mut pipeline.last_mut().unwrap();
+        
+        // Draw
+        let middle = cycle - 1;
+        if (x - middle%40 as i32).abs() <= 1 {
+            CRT[(middle/40) as usize][(middle%40) as usize] = 1;
+        }
+        
+
+        // Decrement command cycle count
+        let should_pop = match command {
+            Command::NOOP => {
+                true
+            },
+            Command::ADDX { cycles, .. } => {
+                *cycles -= 1;
+                *cycles == 0
+            }
+        };
+
+
+
+        // Check cycle count
+        if cycle >= 20 && (cycle - 20) % 40 == 0 {
+            strengths += cycle * x;
+        }
+        
+        // Pop and process command if done waiting
+        if should_pop {
+            let command = pipeline.pop().unwrap();
+            match command {
+                Command::NOOP => {},
+                Command::ADDX {value, ..} => {
+                    x += value;
+                }
+            }
+        }
+        cycle += 1;
+    }
+
+    println!("10.\n");
+    println!("\tPart 1: {}", strengths);
+    println!("\tPart 2:");
+    for line in CRT {
+        print!("\t\t");
+        for pixel in line {
+            if pixel == 0 {
+                print!(".");
+            } else {
+                print!("#");
+            }
+        }
+        println!();
+    }
 }
