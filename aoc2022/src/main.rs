@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap, borrow::BorrowMut, cell::RefCell, rc::Rc};
+use std::{fs, collections::{HashMap, HashSet}, borrow::BorrowMut, cell::RefCell, rc::Rc};
 
 fn main() {
     aoc1();
@@ -8,6 +8,7 @@ fn main() {
     aoc5();
     aoc6();
     aoc7();
+    aoc8();
 }
 
 fn get_input(num: &str) -> String {
@@ -419,4 +420,132 @@ fn aoc7() {
     println!("7.");
     println!("\tPart 1: {}", sum_under_10k);
     println!("\tPart 2: {}", biggest_to_delete);
+}
+
+fn aoc8() {
+    let input = get_input("8");
+    let mut trees: Vec<Vec<u32>> = vec![];
+
+    for line in input.lines() {
+        let mut tree_line = vec![];
+        for ch in line.chars() {
+            tree_line.push(ch.to_digit(10).unwrap());
+        }
+        trees.push(tree_line);
+    }
+
+
+    let mut visible = HashSet::new();
+
+    // L to R
+    for iy in 0..trees.len() {
+        let mut highest_l:i32 = -1;
+        let mut highest_r:i32 = -1;
+        for ix in 0..trees[0].len() {
+            let tree_height = trees[iy][ix] as i32;
+            if tree_height > highest_l {
+                highest_l = tree_height;
+                visible.insert((iy, ix));
+            }
+        }
+        for ix in (0..trees[0].len()).rev() {
+            let tree_height = trees[iy][ix] as i32;
+            if tree_height > highest_r {
+                highest_r = tree_height;
+                visible.insert((iy, ix));
+            }
+        }
+    }
+
+    // T to B
+    for ix in 0..trees[0].len() {
+        let mut highest_t:i32 = -1;
+        let mut highest_b:i32 = -1;
+        for iy in 0..trees.len() {
+            let tree_height = trees[iy][ix] as i32;
+            if tree_height > highest_t {
+                highest_t = tree_height;
+                visible.insert((iy, ix));
+            }
+        }
+
+        for iy in (0..trees.len()).rev() {
+            let tree_height = trees[iy][ix] as i32;
+            if tree_height > highest_b {
+                highest_b = tree_height;
+                visible.insert((iy, ix));
+            }
+        }
+    }
+    fn scenic_score(y: usize, x: usize, trees: &Vec<Vec<u32>>) -> u32 {
+        let view_height = trees[y][x] as i32;
+        let mut score = 1;
+        let mut seen = 0;
+        // right
+        for ix in x+1..trees[0].len() {
+            let seen_tree = trees[y][ix] as i32;
+            seen += 1; 
+            if seen_tree >= view_height {
+                break;
+            }
+        }
+        score *= seen;
+        seen = 0;
+
+        // left
+        if x > 0 {
+            for ix in (0..=x-1).rev() {
+                let seen_tree = trees[y][ix] as i32;
+                seen += 1;
+                if seen_tree >= view_height {
+                    break;
+                }
+            }
+        }
+        score *= seen;
+        seen = 0;
+
+        // up
+        if y > 0 {
+            for iy in (0..=y-1).rev() {
+                let seen_tree = trees[iy][x] as i32;
+                seen += 1;
+                if seen_tree >= view_height {
+                    break;
+                }
+            }
+        }
+        score *= seen;
+        seen = 0;
+        
+        // down
+        for iy in y+1..trees.len() {
+            let seen_tree = trees[iy][x] as i32;
+            seen += 1;
+            if seen_tree >= view_height {
+                break;
+            }
+        }
+        score *= seen;
+        
+
+
+        score as u32
+    }
+
+    let mut max_scenic = 0;
+    for y in 0..trees.len() {
+        for x in 0..trees[0].len() {
+            let score = scenic_score(y, x, &trees);
+            if score > max_scenic {
+                max_scenic = score;
+            }
+        }
+    }
+
+
+
+    println!("8.");
+    println!("\tPart 1: {}", visible.len());
+    println!("\tPart 2: {}", max_scenic);
 }
