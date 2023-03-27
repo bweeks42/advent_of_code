@@ -1,4 +1,4 @@
-use std::{fs, collections::{HashMap, HashSet}, borrow::BorrowMut, cell::RefCell, rc::Rc};
+use std::{fs, collections::{HashMap, HashSet}, cell::RefCell, rc::Rc};
 
 fn main() {
     aoc1();
@@ -9,6 +9,7 @@ fn main() {
     aoc6();
     aoc7();
     aoc8();
+    aoc9();
 }
 
 fn get_input(num: &str) -> String {
@@ -328,7 +329,7 @@ fn aoc7() {
         parent: Option<Rc<RefCell<Directory>>>
     }
 
-    let mut head = Rc::new(RefCell::new(Directory {
+    let head = Rc::new(RefCell::new(Directory {
         size: 0,
         name: String::from("\\"),
         children: vec![],
@@ -548,4 +549,102 @@ fn aoc8() {
     println!("8.");
     println!("\tPart 1: {}", visible.len());
     println!("\tPart 2: {}", max_scenic);
+}
+
+fn aoc9() {
+    let input = get_input("9");
+
+    fn adjacent(a: (i32, i32), b: (i32, i32)) -> bool {
+        (a.0.abs_diff(b.0) <= 1) && (a.1.abs_diff(b.1) <= 1)
+    }
+
+    let mut second_visited = HashSet::new();
+    second_visited.insert((0,0));
+    let mut last_visited = HashSet::new();
+    last_visited.insert((0, 0));
+
+    let mut rope = vec![
+        (0,0), (0,0), (0,0), (0,0), (0,0),
+        (0,0), (0,0), (0,0), (0,0), (0,0)
+    ];
+    for line in input.lines() {
+        let s:Vec<&str> = line.split_ascii_whitespace().collect();
+        let direction = s[0];
+        let ammount = String::from(s[1]).parse::<u32>().unwrap();
+        for _ in 0..ammount {
+            for i in 0..rope.len() {
+
+                // Move head
+                if i == 0 { 
+                    match direction {
+                        "D" => {
+                            rope[0].1 -= 1; 
+                        },
+                        "U" => {
+                            rope[0].1 += 1;
+                        },
+                        "R" => {
+                            rope[0].0 += 1;
+                        },
+                        "L" => {
+                            rope[0].0 -= 1;
+                        }
+                        _ => {
+                            panic!("Not sure what {} is!", direction);
+                        }
+                    }
+                } else {
+                    if !adjacent(rope[i-1], rope[i]) {
+                        // Same x
+                        if rope[i-1].0 == rope[i].0 {
+                            if rope[i-1].1 > rope[i].1 {
+                                rope[i].1 +=1;
+                            } else {
+                                rope[i].1 -=1;
+                            }
+                        } 
+                        // Same y
+                        else if rope[i-1].1 == rope[i].1 {
+                            if rope[i-1].0 > rope[i].0 {
+                                rope[i].0 += 1;
+                            } else {
+                                rope[i].0 -= 1;
+                            }
+                        }
+                        // Diagonal
+                        else {
+                            if rope[i-1].0 > rope[i].0 {
+                                rope[i].0 += 1;
+                            } else {
+                                rope[i].0 -= 1;
+                            }
+
+                            if rope[i-1].1 > rope[i].1 {
+                                rope[i].1 += 1;
+                            } else {
+                                rope[i].1 -= 1;
+                            }
+                        }
+
+
+                        // If second moved, store
+                        if i == 1 {
+                            second_visited.insert(rope[i]);
+                        }
+
+                        // If tail moved, store
+                        if i == rope.len() -1 {
+                           last_visited.insert(rope[i]); 
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    println!("9.");
+    println!("\tPart 1: {}", second_visited.len());
+    println!("\tPart 2: {}", last_visited.len());
 }
