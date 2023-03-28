@@ -1,4 +1,4 @@
-use std::{fs, collections::{HashMap, HashSet}, cell::RefCell, rc::Rc};
+use std::{fs, collections::{HashMap, HashSet, LinkedList}, cell::RefCell, rc::Rc};
 
 fn main() {
     aoc1();
@@ -11,6 +11,7 @@ fn main() {
     aoc8();
     aoc9();
     aoc10();
+    aoc11();
 }
 
 fn get_input(num: &str) -> String {
@@ -744,4 +745,145 @@ fn aoc10() {
         }
         println!();
     }
+}
+
+fn aoc11() {
+    let input = get_input("11");
+    let lines:Vec<&str> = input.lines().collect();
+    let mut i = 0;
+
+    #[derive(Debug, Clone, Copy)]
+    enum Op {
+        AddN(u32),
+        MulN(u32),
+        AddOld,
+        MulOld
+    }
+
+    #[derive(Clone)]
+    struct Monkey {
+        items: LinkedList<u32>,
+        op: Op,
+        div: u32,
+        t_monkey: usize,
+        f_monkey: usize,
+        inspected: u32
+    }
+
+    let mut monkeys:Vec<Monkey> = vec![];
+
+    while i < lines.len() {
+        // Starting items
+        let mut items = vec![];
+        let s = lines[i+1].split(": ").collect::<Vec<&str>>()[1];
+        let item_raw = s.split(", ").collect::<Vec<&str>>();
+        for item in item_raw {
+            items.push(item.parse::<u32>().unwrap());
+        }
+
+        // Operation
+        let s = lines[i+2].split("= old ").collect::<Vec<&str>>()[1].split_ascii_whitespace().collect::<Vec<&str>>(); 
+        let op = match s[1] {
+            "old" => {
+                match s[0] {
+                    "+" => Op::AddOld,
+                    "*" => Op::MulOld,
+                    _ => {panic!("I don't know what {} is!", s[0])}
+                }
+            }
+            _ => {
+                match s[0] {
+                    "+" => Op::AddN(s[1].parse::<u32>().unwrap()),
+                    "*" => Op::MulN(s[1].parse::<u32>().unwrap()),
+                    _ => {panic!("I don't know what {} is!", s[0])}
+                }
+            }
+        };
+
+        // Test
+        let div = lines[i+3].split_ascii_whitespace().collect::<Vec<&str>>()[3].parse::<u32>().unwrap();
+        let t_monkey = lines[i+4].split_ascii_whitespace().collect::<Vec<&str>>()[5].parse::<usize>().unwrap();
+        let f_monkey = lines[i+5].split_ascii_whitespace().collect::<Vec<&str>>()[5].parse::<usize>().unwrap();
+
+        let mut item_list = LinkedList::new();
+        for item in items {
+            item_list.push_back(item);
+        }
+        monkeys.push(Monkey { items: item_list, op: op, div: div, t_monkey: t_monkey, f_monkey: f_monkey, inspected: 0 });
+
+
+        i += 7;
+    }
+    let mut lcm:u64 = 1;
+    for monkey in &monkeys {
+        lcm *= monkey.div as u64;
+    }
+    
+    let mut monkey_copy = monkeys.to_vec();
+
+    fn process_monkey(monkey: &mut Monkey, div: bool, lcm: u64) -> Vec<(usize, u32)> {
+        let mut to_throw = vec![];
+        while !monkey.items.is_empty() {
+            let item = monkey.items.pop_front().unwrap() as u64;
+            monkey.inspected += 1;
+            let new = match monkey.op {
+                Op::AddN(n) => {
+                    item + n as u64
+                },
+                Op::MulN(n) => {
+                    item * n as u64
+                },
+                Op::AddOld => {
+                    item + item as u64
+                },
+                Op::MulOld => {
+                    item * item as u64
+                }
+            };
+            let new_m = (new % lcm) as f64;
+            let new_rounded = if div {(new_m / 3.0).floor() as u32} else {new_m as u32}; 
+            if new_rounded % monkey.div == 0 {
+                to_throw.push((monkey.t_monkey, new_rounded));
+            } else {
+                to_throw.push((monkey.f_monkey, new_rounded));
+            }
+        }
+        to_throw
+    }
+
+    fn monkey_business(monkeys: Vec<Monkey>) -> u64 {
+        let mut inspected:Vec<u32> = vec![];
+        for monkey in monkeys {
+            inspected.push(monkey.inspected);
+        }
+        inspected.sort();
+        inspected.reverse();
+        inspected[0] as u64 * inspected[1] as u64
+
+    }
+
+    for _ in 0..20 {
+        for i in 0..monkeys.len() {
+            let monkey = &mut monkeys[i];
+            let to_push = process_monkey(monkey, true, lcm);
+            for p in to_push {
+                monkeys[p.0].items.push_back(p.1);
+            }
+        }
+    }
+    for _ in 0..10000 {
+        for i in 0..monkey_copy.len() {
+            let monkey = &mut monkey_copy[i];
+            let to_push = process_monkey(monkey, false, lcm);
+            for p in to_push {
+                monkey_copy[p.0].items.push_back(p.1);
+            }
+        }
+    }
+
+
+    
+    println!("11.");
+    println!("\tPart 1: {}", monkey_business(monkeys));
+    println!("\tPart 2: {}", monkey_business(monkey_copy))
 }
