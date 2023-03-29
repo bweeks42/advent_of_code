@@ -12,6 +12,7 @@ fn main() {
     aoc9();
     aoc10();
     aoc11();
+    aoc12();
 }
 
 fn get_input(num: &str) -> String {
@@ -687,7 +688,7 @@ fn aoc10() {
     let mut strengths = 0;
 
     // Part 2
-    let mut CRT = vec![vec![0; 40]; 6];
+    let mut crt = vec![vec![0; 40]; 6];
 
     // Run    
     while pipeline.len() > 0 {
@@ -696,7 +697,7 @@ fn aoc10() {
         // Draw
         let middle = cycle - 1;
         if (x - middle%40 as i32).abs() <= 1 {
-            CRT[(middle/40) as usize][(middle%40) as usize] = 1;
+            crt[(middle/40) as usize][(middle%40) as usize] = 1;
         }
         
 
@@ -734,7 +735,7 @@ fn aoc10() {
     println!("10.\n");
     println!("\tPart 1: {}", strengths);
     println!("\tPart 2:");
-    for line in CRT {
+    for line in crt {
         print!("\t\t");
         for pixel in line {
             if pixel == 0 {
@@ -886,4 +887,154 @@ fn aoc11() {
     println!("11.");
     println!("\tPart 1: {}", monkey_business(monkeys));
     println!("\tPart 2: {}", monkey_business(monkey_copy))
+}
+
+fn aoc12() {
+    let input = get_input("12");
+    let lines:Vec<&str> = input.lines().collect();
+    let mut target = (0, 0);
+    let mut start = (0, 0);
+
+    let mut terrain:Vec<Vec<u32>> = Vec::with_capacity(lines.len());
+
+    let mut y = 0;
+    for line in &lines {
+        let mut l:Vec<u32> = Vec::with_capacity(lines[0].len());
+        let mut x = 0;
+        for c in line.chars() {
+            let k = match c {
+                'S' => {
+                    start = (x, y);
+                    0
+                },
+                'E' => {
+                    target = (x, y);
+                    'z' as u32 - 'a' as u32
+                },
+                _ => c as u32 - 'a' as u32
+            };
+            l.push(k);
+            x += 1;
+        }
+        terrain.push(l);
+        y += 1;
+    }
+
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Hash, Clone)]
+    struct Location {
+        coordinate: (usize, usize)
+    }
+
+    fn can_move(from: (usize, usize), to: (usize, usize), t: &Vec<Vec<u32>>) -> bool {
+        t[to.1][to.0] as i32 - t[from.1][from.0] as i32 <= 1
+    }
+
+    fn neighbors(l: &Location, terrain: &Vec<Vec<u32>>) -> Vec<Location> {
+        let mut n = vec![];
+
+        // Right
+        if l.coordinate.0 < terrain[0].len() - 1 {
+            let next = (l.coordinate.0+1, l.coordinate.1);
+            if can_move(l.coordinate, next, terrain) {
+                n.push(Location { coordinate: next});
+            }
+        }
+
+        // Up
+        if l.coordinate.1 > 0 {
+            let next = (l.coordinate.0, l.coordinate.1 - 1);
+            if can_move(l.coordinate, next, terrain) {
+                n.push(Location {coordinate: next});
+            }
+        }
+
+        // Down
+        if l.coordinate.1 < terrain.len() - 1 {
+            let next = (l.coordinate.0, l.coordinate.1 + 1);
+            if can_move(l.coordinate, next, terrain) {
+                n.push(Location {coordinate: next});
+            }
+        }
+        // Left
+        if l.coordinate.0 > 0 {
+            let next = (l.coordinate.0-1, l.coordinate.1);
+            if can_move(l.coordinate, next, terrain) {
+                n.push(Location {coordinate: next});
+            }
+        }
+        n
+    }
+
+    fn search(terrain: &Vec<Vec<u32>>, start: (usize, usize), target: (usize, usize)) -> Option<u32> {
+        let mut queue:LinkedList<Location> = LinkedList::new();
+        let mut came_from:HashMap<Location, Option<Location>> = HashMap::new();
+
+        let s = Location {coordinate: start};
+        
+        queue.push_front(s.clone());
+        came_from.insert(s.clone(), None);
+
+        while !queue.is_empty() {
+            let current = queue.pop_front().unwrap();
+            if current.coordinate == target {
+                break;
+            }
+
+            for neighbor in neighbors(&current, terrain) {
+                if !came_from.contains_key(&neighbor) {
+                    queue.push_back(neighbor.clone());
+                    came_from.insert(neighbor, Some(current.clone()));
+                }
+            }
+        }
+
+        // Print came_from
+        unwind(&came_from, &Location { coordinate: target })
+    }
+
+    fn unwind(map: &HashMap<Location, Option<Location>>, l: &Location) -> Option<u32> {
+        match map.get(&l) {
+            None => None,
+            Some(location) => {
+                match location {
+                    None => Some(0),
+                    Some(previous) => match unwind(map, previous) {
+                        Some(n) => Some(n+1),
+                        None => None
+                    }
+                }
+            }
+        }
+    }
+
+    let mut shortest_distance = u32::MAX;
+    let mut to_search:Vec<(usize, usize)> = vec![];
+
+    let mut y = 0;
+    for row in &terrain {
+        let mut x = 0;
+        for sq in row {
+            if *sq == 0 {
+                to_search.push((x, y));
+            }
+            x += 1;
+        }
+        y += 1;
+    }
+
+    for s in to_search {
+        match search(&terrain, s, target) {
+            Some(dist) => {
+                if dist < shortest_distance {
+                    shortest_distance = dist
+                }
+            },
+            None => {}
+        }
+    }
+
+
+    println!("12.");
+    println!("\tPart 1: {}", search(&terrain, start, target).unwrap());
+    println!("\tPart 2: {}", shortest_distance);
 }
